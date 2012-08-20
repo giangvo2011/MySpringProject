@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.0.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+		http://www.springframework.org/schema/data/mongo
+		http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util
+		http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+
+	<!-- Spring transaction manager -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager"
+		p:sessionFactory-ref="sessionFactory" />
+	<tx:annotation-driven />
+
+	<aop:config>
+		<aop:pointcut id="serviceMethods"
+			expression="execution(public * mobion.point.service.*.*(..))" />
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="serviceMethods" />
+	</aop:config>
+	
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="find*" read-only="true" />
+			<tx:method name="*" rollback-for="Exception"/>
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- Rest -->
+	<aop:aspectj-autoproxy />
+	<bean id="restPreprocessor" class="mobion.point.rest.utils.RestPreprocessor"/>
+	
+	<bean id="mobionExceptionMapper" class="mobion.point.rest.utils.MobionExceptionMapper"/>
+	
+	<bean id="jacksonConfigurator" class="mobion.point.rest.utils.JacksonConfigurator"/>
+	
+	<bean id="abstractRest" class="mobion.point.rest.impl.AbstractRest"
+		abstract="true">
+		<property name="transactionService" ref="transactionService" />
+		<property name="accountService" ref="accountService" />
+	</bean>
+
+	<bean id="accountRest" class="mobion.point.rest.impl.AccountRestImpl" parent="abstractRest"></bean>
+	<bean id="transactionRest" class="mobion.point.rest.impl.TransactionRestImpl" parent="abstractRest"></bean>
+	
+	
+
+
+	<!-- Service -->
+	<bean id="abstractService" class="mobion.point.service.impl.AbstractService"
+		abstract="true">
+		<property name="memberInfoDAO" ref="memberInfoDAO" />
+		<property name="memberTypeDAO" ref="memberTypeDAO" />
+		<property name="originalSystemDAO" ref="originalSystemDAO" />
+		<property name="snapshotTransactionsDAO" ref="snapshotTransactionsDAO" />
+		<property name="snapshotTransactionsTypeDAO" ref="snapshotTransactionsTypeDAO" />
+		<property name="transactionsDAO" ref="transactionsDAO" />
+		<property name="transactionsGroupDAO" ref="transactionsGroupDAO" />
+		<property name="transactionsGroupTypeDAO" ref="transactionsGroupTypeDAO" />
+		<property name="transactionsTypeDAO" ref="transactionsTypeDAO" />
+	</bean>
+
+	<bean id="serviceFactory" class="mobion.point.service.impl.ServiceFactory" parent="abstractRest" factory-method="init"/>
+
+	<bean id="transactionService" class="mobion.point.service.impl.TransactionServiceImpl"
+		parent="abstractService" />
+	<bean id="accountService" class="mobion.point.service.impl.AccountServiceImpl"
+		parent="abstractService" />
+
+
+	<!-- DAO -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="configLocation" value="classpath:hibernate.cfg.xml">
+		</property>
+	</bean>
+	
+	<bean id="daoFactory" class="mobion.point.dao.impl.DAOFactory" parent="abstractService" factory-method="init"/>
+
+	<bean id="mobionAbstractDAO" class="mobion.point.dao.impl.MobionAbstractDAO"
+		abstract="true">
+		<property name="sessionFactory" ref="sessionFactory">
+		</property>
+	</bean>
+
+	<bean id="memberInfoDAO" class="mobion.point.dao.impl.MemberInfoDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="memberTypeDAO" class="mobion.point.dao.impl.MemberTypeDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="originalSystemDAO" class="mobion.point.dao.impl.OriginalSystemDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="snapshotTransactionsDAO" class="mobion.point.dao.impl.SnapshotTransactionsDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="snapshotTransactionsTypeDAO" class="mobion.point.dao.impl.SnapshotTransactionsTypeDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="transactionsDAO" class="mobion.point.dao.impl.TransactionsDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="transactionsGroupDAO" class="mobion.point.dao.impl.TransactionsGroupDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="transactionsGroupTypeDAO" class="mobion.point.dao.impl.TransactionsGroupTypeDAOImpl"
+		parent="mobionAbstractDAO" />
+	<bean id="transactionsTypeDAO" class="mobion.point.dao.impl.TransactionsTypeDAOImpl"
+		parent="mobionAbstractDAO" />
+</beans>
